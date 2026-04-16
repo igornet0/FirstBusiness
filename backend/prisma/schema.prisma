@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  role             UserRole  @default(user)
+  xp               Int       @default(0)
+  path             String    @default("saas")
+  isActive         Int       @default(1)
+  missionProgress  Json
+  createdAt        DateTime  @default(now())
+  dailyRequets     Int       @default(5)
+  conversations    AiConversation[]
+  aiUserRequestLogs  AiUserRequestLog[]
+  missionAnswers     MissionAnswer[]
+}
+
+/// Ответы пользователя на вопросы миссии (черновик при вводе или финал при завершении уровня).
+model MissionAnswer {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionId  String
+  taskIndex  Int
+  question   String
+  answer     String
+  isDraft    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, missionId, taskIndex])
+  @@index([userId, missionId, createdAt])
+}
+
+/// Запросы к legacy POST /api/ai (без сохранения AiMessage).
+model AiUserRequestLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum UserRole {
+  admin
+  user
+  bot
+}
+
+model AiConversation {
+  id                  String      @id @default(uuid())
+  userId              String
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title               String
+  mode                AiMode
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime
+  lastMessagePreview  String      @default("")
+  messages            AiMessage[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model AiMessage {
+  id              String         @id @default(uuid())
+  conversationId  String
+  conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role            MessageRole
+  content         String
+  createdAt       DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+enum AiMode {
+  chat
+  ideas
+  offer
+  analyze
+}
+
+enum MessageRole {
+  user
+  mascot
+}
