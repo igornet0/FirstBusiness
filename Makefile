@@ -1,9 +1,14 @@
-.PHONY: help help-users create-user create-admin block-user unblock-user delete-user db-generate migrate migrate-deploy
+.PHONY: help help-users create-user create-admin block-user unblock-user delete-user db-generate migrate migrate-deploy docker-up docker-down docker-logs
 
 BACKEND := backend
 FRONTEND := frontend
 
 help:
+	@echo "Docker (из корня репозитория):"
+	@echo "  make docker-up         — собрать и поднять БД + backend + frontend (Nginx)"
+	@echo "  make docker-down       — остановить и удалить контейнеры"
+	@echo "  make docker-logs       — логи всех сервисов"
+	@echo ""
 	@echo "Database (Prisma, from ./$(BACKEND)):"
 	@echo "  make db-generate      	— generate Prisma client"
 	@echo "  make migrate          	— prisma migrate dev (локальная разработка)"
@@ -60,4 +65,13 @@ start-frontend:
 
 stop:
 	kill $(shell ps aux | grep "npm run dev" | grep -v grep | awk '{print $2}')
+
+docker-up:
+	docker compose up --build -d
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f
 
